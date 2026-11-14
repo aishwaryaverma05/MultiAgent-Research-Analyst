@@ -1,5 +1,6 @@
-
 from datetime import UTC, datetime
+
+from langgraph.types import interrupt
 
 from agents.contracts import (
     CriticRequest,
@@ -22,17 +23,12 @@ def initialize_research(state: ResearchState) -> dict:
     query = state.get("query", "").strip()
 
     if len(query) < 8:
-        raise ValueError(
-            "Research query must contain at least 8 characters."
-        )
+        raise ValueError("Research query must contain at least 8 characters.")
 
     return {
         "status": "running",
         "current_stage": "research_initialized",
-        "created_at": (
-            state.get("created_at")
-            or datetime.now(UTC).isoformat()
-        ),
+        "created_at": (state.get("created_at") or datetime.now(UTC).isoformat()),
         "revision_count": state.get("revision_count", 0),
         "max_revisions": state.get("max_revisions", 3),
         "errors": [],
@@ -52,12 +48,8 @@ def make_supervisor_node(supervisor: SupervisorAgent):
 
         return {
             "plan": result.plan.model_dump(),
-            "sources": [
-                source.model_dump() for source in result.sources
-            ],
-            "evidence": [
-                item.model_dump() for item in result.evidence
-            ],
+            "sources": [source.model_dump() for source in result.sources],
+            "evidence": [item.model_dump() for item in result.evidence],
             "supervisor_status": result.status,
             "errors": list(result.errors),
             "current_stage": "supervisor_completed",
@@ -70,15 +62,10 @@ def make_writer_node(writer: WriterAgent):
     """Create a graph node that generates the research report."""
 
     async def run_writer(state: ResearchState) -> dict:
-        evidence = [
-            EvidenceDocument.model_validate(item)
-            for item in state.get("evidence", [])
-        ]
+        evidence = [EvidenceDocument.model_validate(item) for item in state.get("evidence", [])]
 
         if not evidence:
-            raise ValueError(
-                "Cannot generate a report without research evidence."
-            )
+            raise ValueError("Cannot generate a report without research evidence.")
 
         previous_report = state.get("report", {})
 
@@ -108,10 +95,7 @@ def make_critic_node(critic: CriticAgent):
         if not report:
             raise ValueError("Cannot evaluate an empty research report.")
 
-        evidence = [
-            EvidenceDocument.model_validate(item)
-            for item in state.get("evidence", [])
-        ]
+        evidence = [EvidenceDocument.model_validate(item) for item in state.get("evidence", [])]
 
         request = CriticRequest(
             report=ResearchReport.model_validate(report),
@@ -153,16 +137,9 @@ def make_fact_checker_node(fact_checker: FactCheckerAgent):
         report_data = state.get("report")
 
         if not report_data:
-            raise ValueError(
-                "Cannot fact-check an empty research report."
-            )
+            raise ValueError("Cannot fact-check an empty research report.")
 
-        evidence = [
-            EvidenceDocument.model_validate(item)
-            for item in state.get("evidence", [])
-        ]
-
-        
+        evidence = [EvidenceDocument.model_validate(item) for item in state.get("evidence", [])]
 
         request = FactCheckRequest(
             report=ResearchReport.model_validate(report_data),
@@ -172,9 +149,7 @@ def make_fact_checker_node(fact_checker: FactCheckerAgent):
         result = await fact_checker.run(request)
 
         has_issues = bool(
-            result.unsupported_claims
-            or result.contradictory_claims
-            or result.unknown_citations
+            result.unsupported_claims or result.contradictory_claims or result.unknown_citations
         )
 
         return {
@@ -184,3 +159,66 @@ def make_fact_checker_node(fact_checker: FactCheckerAgent):
         }
 
     return run_fact_checker
+
+
+def mark_awaiting_approval(state: ResearchState) -> dict:
+    """Mark the workflow as waiting for human approval."""
+
+    return {
+        "status": "awaiting_approval",
+        "current_stage": "awaiting_human_approval",
+    }
+
+
+def human_approval_node(state: ResearchState) -> dict:
+    """Pause the workflow until a human approves or rejects the report."""
+
+    decision = interrupt(
+        {
+            "type": "human_approval",
+            "report": state.get("report"),
+            "critic_score": state.get("critic_score"),
+            "revision_count": state.get("revision_count", 0),
+            "max_revisions": state.get("max_revisions", 3),
+        }
+    )
+
+    if not isinstance(decision, dict):
+        raise ValueError("Human approval response must be a dictionary.")
+
+    approved = decision.get("approved")
+
+    if not isinstance(approved, bool):
+        raise ValueError("Human approval response must contain a boolean 'approved' field.")
+
+    feedback = decision.get("feedback", "")
+
+    if not isinstance(feedback, str):
+        raise ValueError("Human feedback must be a string.")
+
+    existing_feedback = state.get("critic_feedback", [])
+
+    updated_feedback = list(existing_feedback)
+
+    if not approved and feedback.strip():
+        updated_feedback.append(feedback.strip())
+
+    return {
+        "human_approval": {
+            "approved": approved,
+            "feedback": feedback,
+        },
+        "human_feedback": feedback,
+        "critic_feedback": updated_feedback,
+        "status": "running",
+        "current_stage": ("human_approved" if approved else "human_rejected"),
+    }
+
+
+def finalize_rejection(state: ResearchState) -> dict:
+    """Mark the research workflow as rejected after revision limits."""
+
+    return {
+        "status": "rejected",
+        "current_stage": "human_rejection_finalized",
+    }

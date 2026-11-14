@@ -1,7 +1,7 @@
-
 import pytest
 
 from agents.contracts import (
+    Citation,
     EvidenceDocument,
     EvidenceItem,
     FactCheckRequest,
@@ -33,11 +33,11 @@ class FakeChatModel:
 def make_report():
     return ResearchReport(
         title="Renewable Energy Research",
-        executive_summary="Solar energy capacity is growing.",
+        executive_summary="Solar energy capacity is growing. [C1]",
         sections=[
             {
                 "heading": "Solar Energy",
-                "content": "Solar capacity has increased.",
+                "content": "Solar capacity has increased. [C1]",
             }
         ],
         limitations=["Limited source coverage."],
@@ -45,7 +45,15 @@ def make_report():
             "https://example.com/report",
             "https://unknown.com/report",
         ],
-        markdown="# Renewable Energy Research\n\nSolar capacity is growing.",
+        citations=[
+            Citation(
+                citation_id="C1",
+                source_id="source-001",
+                title="Renewable Energy Report",
+                url="https://example.com/report",
+            )
+        ],
+        markdown=("# Renewable Energy Research\n\nSolar capacity is growing. [C1]"),
     )
 
 
@@ -58,9 +66,7 @@ def make_evidence():
         evidence_items=[
             EvidenceItem(
                 claim="Solar energy capacity increased.",
-                supporting_quote=(
-                    "Solar energy capacity increased significantly."
-                ),
+                supporting_quote=("Solar energy capacity increased significantly."),
             )
         ],
         extraction_status="success",
@@ -69,12 +75,8 @@ def make_evidence():
 
 def make_result():
     return FactCheckResult(
-        verified_claims=[
-            "Solar energy capacity increased."
-        ],
-        unsupported_claims=[
-            "Solar energy will dominate all energy production."
-        ],
+        verified_claims=["Solar energy capacity increased."],
+        unsupported_claims=["Solar energy will dominate all energy production."],
         contradictory_claims=[],
         unknown_citations=[],
     )
@@ -111,7 +113,7 @@ async def test_fact_checker_accepts_dictionary_output():
 
 
 @pytest.mark.asyncio
-async def test_fact_checker_identifies_unknown_citations():
+async def test_fact_checker_identifies_unknown_references():
     model = FakeChatModel(make_result())
     checker = FactCheckerAgent(model=model)
 
@@ -119,6 +121,53 @@ async def test_fact_checker_identifies_unknown_citations():
 
     assert "https://unknown.com/report" in result.unknown_citations
     assert "https://example.com/report" not in result.unknown_citations
+
+
+@pytest.mark.asyncio
+async def test_fact_checker_accepts_valid_inline_citation():
+    model = FakeChatModel(make_result())
+    checker = FactCheckerAgent(model=model)
+
+    result = await checker.run(make_request())
+
+    assert "C1" not in result.unknown_citations
+
+
+@pytest.mark.asyncio
+async def test_fact_checker_identifies_unknown_inline_citation():
+    report = make_report().model_copy(
+        update={"markdown": ("# Research Report\n\nSolar capacity is growing. [C99]")}
+    )
+
+    request = make_request().model_copy(update={"report": report})
+
+    checker = FactCheckerAgent(model=FakeChatModel(make_result()))
+    result = await checker.run(request)
+
+    assert "C99" in result.unknown_citations
+
+
+@pytest.mark.asyncio
+async def test_fact_checker_identifies_mismatched_citation_metadata():
+    report = make_report().model_copy(
+        update={
+            "citations": [
+                Citation(
+                    citation_id="C1",
+                    source_id="source-001",
+                    title="Incorrect Report",
+                    url="https://example.com/report",
+                )
+            ]
+        }
+    )
+
+    request = make_request().model_copy(update={"report": report})
+
+    checker = FactCheckerAgent(model=FakeChatModel(make_result()))
+    result = await checker.run(request)
+
+    assert "C1" in result.unknown_citations
 
 
 @pytest.mark.asyncio
@@ -133,6 +182,7 @@ async def test_fact_checker_includes_report_and_evidence_in_prompt():
     assert "Renewable Energy Research" in prompt
     assert "Solar energy capacity increased significantly." in prompt
     assert "source-001" in prompt
+    assert "C1" in prompt
 
 
 @pytest.mark.asyncio
@@ -144,10 +194,8 @@ async def test_fact_checker_handles_missing_evidence():
 
     model = FakeChatModel(
         FactCheckResult(
-            verified_claims=[],
-            unsupported_claims=[
-                "Solar energy capacity is growing."
-            ],
+            verified_claims=["Solar energy capacity is growing."],
+            unsupported_claims=[],
         )
     )
 
@@ -155,18 +203,15 @@ async def test_fact_checker_handles_missing_evidence():
     result = await checker.run(request)
 
     assert result.verified_claims == []
+    assert "https://example.com/report" in result.unknown_citations
     assert "https://unknown.com/report" in result.unknown_citations
-    assert "VERIFIED RESEARCH EVIDENCE" in (
-        model.structured_model.received_prompt
-    )
+    assert "C1" in result.unknown_citations
+    assert "VERIFIED RESEARCH EVIDENCE" in (model.structured_model.received_prompt)
 
 
 @pytest.mark.asyncio
 async def test_fact_checker_rejects_unexpected_model_output():
-    checker = FactCheckerAgent(
-        model=FakeChatModel("invalid response")
-    )
+    checker = FactCheckerAgent(model=FakeChatModel("invalid response"))
 
     with pytest.raises(TypeError, match="FactChecker expected"):
         await checker.run(make_request())
-

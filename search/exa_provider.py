@@ -1,7 +1,7 @@
-
 import asyncio
 import hashlib
 import logging
+import math
 from typing import Any
 from urllib.parse import (
     parse_qsl,
@@ -52,7 +52,10 @@ class ExaSearchProvider:
         if hostname.startswith("www."):
             hostname = hostname[4:]
 
-        port = parsed.port
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise ValueError("Search result contains an invalid URL.") from exc
         netloc = hostname
 
         if port and not (
@@ -73,8 +76,7 @@ class ExaSearchProvider:
                 parsed.query,
                 keep_blank_values=True,
             )
-            if not key.lower().startswith("utm_")
-            and key.lower() not in tracking_parameters
+            if not key.lower().startswith("utm_") and key.lower() not in tracking_parameters
         ]
 
         normalized_query = urlencode(sorted(query_parameters))
@@ -114,6 +116,11 @@ class ExaSearchProvider:
 
         score = getattr(result, "score", None)
 
+        if score is not None:
+            score = float(score)
+            if not math.isfinite(score):
+                raise ValueError("Exa returned an invalid relevance score.")
+
         metadata = {
             "provider": "exa",
             "search_query": query,
@@ -128,18 +135,14 @@ class ExaSearchProvider:
         if author:
             metadata["author"] = str(author)
 
-        source_id = hashlib.sha256(
-            normalized_url.encode("utf-8")
-        ).hexdigest()[:16]
+        source_id = hashlib.sha256(normalized_url.encode("utf-8")).hexdigest()[:16]
 
         return SourceRecord(
             source_id=source_id,
             title=str(title),
             url=normalized_url,
             snippet=snippet,
-            relevance_score=(
-                float(score) if score is not None else None
-            ),
+            relevance_score=score,
             metadata=metadata,
         )
 
@@ -169,9 +172,7 @@ class ExaSearchProvider:
 
         for result in response.results:
             try:
-                records.append(
-                    self._to_source_record(result, task.query)
-                )
+                records.append(self._to_source_record(result, task.query))
             except (TypeError, ValueError):
                 logger.warning(
                     "Skipping an invalid Exa result for query: %s",

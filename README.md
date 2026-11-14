@@ -115,7 +115,7 @@ flowchart TD
     I --> J[Final Research Report]
 ```
 
-*Note: This diagram represents the intended high-level flow. Actual workflow routing and approval behavior are governed by the current LangGraph implementation. A dedicated human approval interface is not yet implemented.*
+_Note: This diagram represents the intended high-level flow. Actual workflow routing and approval behavior are governed by the current LangGraph implementation. A dedicated human approval interface is not yet implemented._
 
 ### Architectural Principles
 
@@ -129,15 +129,15 @@ flowchart TD
 
 ## Agent Responsibilities
 
-| Agent | Responsibility |
-|---|---|
-| Planner Agent | Structures the research task and planning requirements. |
-| Supervisor Agent | Coordinates research execution and agent workflow. |
-| Search Agent | Retrieves relevant external information. |
-| Reader Agent | Fetches and extracts content from web sources. |
-| Writer Agent | Generates structured research reports grounded in available evidence. |
-| Critic Agent | Evaluates report quality and provides revision feedback. |
-| Fact Checker Agent | Checks claims, citations, and potential contradictions. |
+| Agent              | Responsibility                                                        |
+| ------------------ | --------------------------------------------------------------------- |
+| Planner Agent      | Structures the research task and planning requirements.               |
+| Supervisor Agent   | Coordinates research execution and agent workflow.                    |
+| Search Agent       | Retrieves relevant external information.                              |
+| Reader Agent       | Fetches and extracts content from web sources.                        |
+| Writer Agent       | Generates structured research reports grounded in available evidence. |
+| Critic Agent       | Evaluates report quality and provides revision feedback.              |
+| Fact Checker Agent | Checks claims, citations, and potential contradictions.               |
 
 ### Agent Communication
 
@@ -169,17 +169,17 @@ The workflow includes a bounded revision loop to prevent indefinite regeneration
 
 ## Technology Stack
 
-| Category | Technology |
-|---|---|
-| Language | Python |
-| Data Validation | Pydantic |
-| Workflow Orchestration | LangGraph |
-| LLM Provider | Google Gemini |
-| Search Provider | Exa |
-| Testing | Pytest |
-| Code Quality | Ruff |
-| Configuration | Environment Variables |
-| Version Control | Git and GitHub |
+| Category               | Technology            |
+| ---------------------- | --------------------- |
+| Language               | Python                |
+| Data Validation        | Pydantic              |
+| Workflow Orchestration | LangGraph             |
+| LLM Provider           | Google Gemini         |
+| Search Provider        | Exa                   |
+| Testing                | Pytest                |
+| Code Quality           | Ruff                  |
+| Configuration          | Environment Variables |
+| Version Control        | Git and GitHub        |
 
 Additional technologies such as Qdrant, PostgreSQL, Redis, Celery, FastAPI, Streamlit, Ragas, and Docker are planned for later phases.
 
@@ -273,48 +273,48 @@ MultiAgent-Research-Analyst/
 
 Contains specialized agents and their communication contracts.
 
-| File | Purpose |
-|---|---|
-| `base.py` | Defines the common base agent interface. |
-| `contracts.py` | Defines structured Pydantic request and response models. |
-| `planner.py` | Research task planning. |
-| `supervisor.py` | Agent coordination and supervision. |
-| `search_agent.py` | Search agent implementation. |
-| `reader_agent.py` | Reader agent implementation. |
-| `writer.py` | Research report generation. |
-| `critic.py` | Report quality evaluation and feedback. |
-| `fact_checker.py` | Claim and citation verification. |
+| File              | Purpose                                                  |
+| ----------------- | -------------------------------------------------------- |
+| `base.py`         | Defines the common base agent interface.                 |
+| `contracts.py`    | Defines structured Pydantic request and response models. |
+| `planner.py`      | Research task planning.                                  |
+| `supervisor.py`   | Agent coordination and supervision.                      |
+| `search_agent.py` | Search agent implementation.                             |
+| `reader_agent.py` | Reader agent implementation.                             |
+| `writer.py`       | Research report generation.                              |
+| `critic.py`       | Report quality evaluation and feedback.                  |
+| `fact_checker.py` | Claim and citation verification.                         |
 
 #### `graph/` — Workflow Orchestration
 
 Contains the LangGraph workflow implementation.
 
-| File | Purpose |
-|---|---|
-| `state.py` | Defines shared research workflow state. |
-| `nodes.py` | Implements workflow node functions and agent integration. |
-| `routing.py` | Defines conditional workflow routing. |
-| `workflow.py` | Builds and connects the LangGraph workflow. |
+| File              | Purpose                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
+| `state.py`        | Defines shared research workflow state.                                          |
+| `nodes.py`        | Implements workflow node functions and agent integration.                        |
+| `routing.py`      | Defines conditional workflow routing.                                            |
+| `workflow.py`     | Builds and connects the LangGraph workflow.                                      |
 | `nodes.py.backup` | Backup copy of an earlier nodes implementation; not part of the active workflow. |
 
 #### `search/` — Search Infrastructure
 
-| File | Purpose |
-|---|---|
+| File              | Purpose                          |
+| ----------------- | -------------------------------- |
 | `exa_provider.py` | Exa search provider integration. |
-| `workers.py` | Search worker functionality. |
+| `workers.py`      | Search worker functionality.     |
 
 #### `reader/` — Web Content Processing
 
-| File | Purpose |
-|---|---|
-| `web_fetcher.py` | Fetches web content. |
+| File                   | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
+| `web_fetcher.py`       | Fetches web content.                          |
 | `content_extractor.py` | Extracts readable content from fetched pages. |
 
 #### `llm/` — LLM Integration
 
-| File | Purpose |
-|---|---|
+| File        | Purpose                    |
+| ----------- | -------------------------- |
 | `gemini.py` | Google Gemini integration. |
 
 #### `app/` — Application Layer
@@ -351,14 +351,14 @@ Contains tests for contracts, agents, search, routing, and workflow integration.
 
 #### Root Configuration Files
 
-| File | Purpose |
-|---|---|
-| `config.py` | Central project configuration. |
-| `pyproject.toml` | Project tooling and configuration. |
-| `requirements.txt` | Python dependencies. |
-| `.env.example` | Example environment variable configuration. |
-| `.gitignore` | Excludes virtual environments, secrets, caches, and generated files. |
-| `README.md` | Project documentation. |
+| File               | Purpose                                                              |
+| ------------------ | -------------------------------------------------------------------- |
+| `config.py`        | Central project configuration.                                       |
+| `pyproject.toml`   | Project tooling and configuration.                                   |
+| `requirements.txt` | Python dependencies.                                                 |
+| `.env.example`     | Example environment variable configuration.                          |
+| `.gitignore`       | Excludes virtual environments, secrets, caches, and generated files. |
+| `README.md`        | Project documentation.                                               |
 
 ---
 
@@ -392,6 +392,7 @@ The project is being developed in six phases.
 - Bounded revision loop.
 
 **Remaining:**
+
 - Parallel research worker orchestration and validation.
 - Actual human approval mechanism.
 
@@ -532,11 +533,11 @@ ruff check .
 
 ### Current Validation Results
 
-| Validation | Result |
-|---|---|
-| Automated test suite | 46 passed |
-| Ruff lint checks | All checks passed |
-| LangGraph integration tests | 4 passed |
+| Validation                  | Result            |
+| --------------------------- | ----------------- |
+| Automated test suite        | 46 passed         |
+| Ruff lint checks            | All checks passed |
+| LangGraph integration tests | 4 passed          |
 
 The LangGraph integration tests use test doubles/fake agents to validate workflow behavior. Full live execution using real external API providers remains a separate validation task.
 

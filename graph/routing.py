@@ -1,4 +1,3 @@
-
 def route_after_critic(
     score: float,
     revision_count: int,

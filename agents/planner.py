@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from agents.base import BaseAgent
@@ -21,9 +20,7 @@ class PlannerAgent(BaseAgent[ResearchRequest, ResearchPlan]):
 
         if self._structured_model is None:
             model = self._model or create_chat_model()
-            self._structured_model = model.with_structured_output(
-                ResearchPlan
-            )
+            self._structured_model = model.with_structured_output(ResearchPlan)
 
         return self._structured_model
 
@@ -72,8 +69,6 @@ Return the result using the required structured schema.
             )
 
         if not plan.search_tasks:
-            raise ValueError(
-                "Planner generated no executable search tasks."
-            )
+            raise ValueError("Planner generated no executable search tasks.")
 
         return plan

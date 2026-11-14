@@ -1,5 +1,5 @@
-
 import pytest
+from langgraph.types import Command
 
 from agents.contracts import (
     CriticEvaluation,
@@ -25,9 +25,7 @@ def make_evidence():
         evidence_items=[
             EvidenceItem(
                 claim="Solar energy capacity increased.",
-                supporting_quote=(
-                    "Solar energy capacity increased significantly."
-                ),
+                supporting_quote=("Solar energy capacity increased significantly."),
             )
         ],
         extraction_status="success",
@@ -61,11 +59,7 @@ def make_supervisor_result():
     return SupervisorResult(
         plan=ResearchPlan(
             objective="Research renewable energy development",
-            research_questions=[
-                ResearchQuestion(
-                    question="How is solar energy capacity growing?"
-                )
-            ],
+            research_questions=[ResearchQuestion(question="How is solar energy capacity growing?")],
         ),
         sources=[source],
         evidence=[make_evidence()],
@@ -93,9 +87,7 @@ def make_critic_evaluation(score):
         unsupported_claims=[],
         citation_issues=[],
         missing_information=[],
-        revision_instructions=(
-            ["Improve the report."] if score < 7 else []
-        ),
+        revision_instructions=(["Improve the report."] if score < 7 else []),
     )
 
 
@@ -107,9 +99,11 @@ class FakeSupervisor:
 class FakeWriter:
     def __init__(self):
         self.calls = 0
+        self.payloads = []
 
     async def run(self, payload):
         self.calls += 1
+        self.payloads.append(payload)
         return make_report()
 
 
@@ -131,9 +125,7 @@ class FakeFactChecker:
     async def run(self, payload):
         self.calls += 1
         return FactCheckResult(
-            verified_claims=[
-                "Solar energy capacity increased."
-            ],
+            verified_claims=["Solar energy capacity increased."],
             unsupported_claims=[],
             contradictory_claims=[],
             unknown_citations=[],
@@ -155,15 +147,35 @@ def make_workflow(critic_scores):
     return workflow, writer, critic, fact_checker
 
 
+def make_config(thread_id):
+    return {
+        "configurable": {
+            "thread_id": thread_id,
+        }
+    }
+
+
 @pytest.mark.asyncio
 async def test_complete_workflow_completes_successfully():
     workflow, writer, critic, fact_checker = make_workflow([8.5])
+    config = make_config("test-001")
 
     result = await workflow.ainvoke(
         {
             "research_id": "test-001",
             "query": "Evaluate modern RAG architectures",
-        }
+        },
+        config=config,
+    )
+
+    assert result["status"] == "awaiting_approval"
+    assert result["current_stage"] == "awaiting_human_approval"
+    assert result["__interrupt__"]
+    assert fact_checker.calls == 0
+
+    result = await workflow.ainvoke(
+        Command(resume={"approved": True}),
+        config=config,
     )
 
     assert result["status"] == "completed"
@@ -178,20 +190,28 @@ async def test_complete_workflow_completes_successfully():
 
 @pytest.mark.asyncio
 async def test_workflow_revises_report_when_critic_score_is_low():
-    workflow, writer, critic, fact_checker = make_workflow(
-        [6.0, 8.5]
-    )
+    workflow, writer, critic, fact_checker = make_workflow([6.0, 8.5])
+    config = make_config("test-002")
 
     result = await workflow.ainvoke(
         {
             "research_id": "test-002",
             "query": "Evaluate modern RAG architectures",
-        }
+        },
+        config=config,
+    )
+
+    assert result["status"] == "awaiting_approval"
+    assert result["revision_count"] == 1
+    assert result["critic_score"] == 8.5
+
+    result = await workflow.ainvoke(
+        Command(resume={"approved": True}),
+        config=config,
     )
 
     assert result["status"] == "completed"
     assert result["revision_count"] == 1
-    assert result["critic_score"] == 8.5
     assert writer.calls == 2
     assert critic.calls == 2
     assert fact_checker.calls == 1
@@ -199,22 +219,80 @@ async def test_workflow_revises_report_when_critic_score_is_low():
 
 @pytest.mark.asyncio
 async def test_workflow_stops_revision_at_maximum():
-    workflow, writer, critic, fact_checker = make_workflow(
-        [4.0, 4.0, 4.0, 4.0]
-    )
+    workflow, writer, critic, fact_checker = make_workflow([4.0, 4.0, 4.0, 4.0])
+    config = make_config("test-003")
 
     result = await workflow.ainvoke(
         {
             "research_id": "test-003",
             "query": "Evaluate modern RAG architectures",
             "max_revisions": 3,
-        }
+        },
+        config=config,
     )
 
-    assert result["status"] == "completed"
+    assert result["status"] == "awaiting_approval"
+    assert result["revision_count"] == 3
+    assert result["__interrupt__"]
+
+    result = await workflow.ainvoke(
+        Command(
+            resume={
+                "approved": False,
+                "feedback": "The report does not meet quality requirements.",
+            }
+        ),
+        config=config,
+    )
+
+    assert result["status"] == "rejected"
+    assert result["current_stage"] == "human_rejection_finalized"
     assert result["revision_count"] == 3
     assert writer.calls == 4
     assert critic.calls == 4
+    assert fact_checker.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_human_rejection_triggers_revision_with_feedback():
+    workflow, writer, critic, fact_checker = make_workflow([8.5, 8.5])
+    config = make_config("test-004")
+
+    result = await workflow.ainvoke(
+        {
+            "research_id": "test-004",
+            "query": "Evaluate modern RAG architectures",
+        },
+        config=config,
+    )
+
+    assert result["status"] == "awaiting_approval"
+
+    result = await workflow.ainvoke(
+        Command(
+            resume={
+                "approved": False,
+                "feedback": "Add more technical implementation details.",
+            }
+        ),
+        config=config,
+    )
+
+    assert result["status"] == "awaiting_approval"
+    assert result["revision_count"] == 1
+    assert result["__interrupt__"]
+
+    assert writer.calls == 2
+    assert critic.calls == 2
+    assert "Add more technical implementation details." in writer.payloads[1].revision_feedback
+
+    result = await workflow.ainvoke(
+        Command(resume={"approved": True}),
+        config=config,
+    )
+
+    assert result["status"] == "completed"
+    assert result["revision_count"] == 1
     assert fact_checker.calls == 1
 
 

@@ -19,3 +19,8 @@ ruff
 # Web search
 exa-py
 beautifulsoup4
+
+# Vector database
+qdrant-client
+rank-bm25  #keyword base retrieval hota hai
+flashrank  #use to re rank search results

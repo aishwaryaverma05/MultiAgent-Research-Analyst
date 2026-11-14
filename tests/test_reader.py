@@ -1,4 +1,3 @@
-
 import pytest
 
 from agents.contracts import (
@@ -39,9 +38,7 @@ class FakeModel:
 
 
 def create_reader(evidence_items):
-    model = FakeModel(
-        EvidenceExtraction(evidence_items=evidence_items)
-    )
+    model = FakeModel(EvidenceExtraction(evidence_items=evidence_items))
 
     return ReaderAgent(
         model=model,

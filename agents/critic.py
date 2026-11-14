@@ -1,4 +1,3 @@
-
 import json
 from typing import Any
 
@@ -20,14 +19,8 @@ class CriticAgent(BaseAgent[CriticRequest, CriticEvaluation]):
         """Initialize the structured LLM lazily."""
 
         if self._structured_model is None:
-            model = (
-                self._model
-                if self._model is not None
-                else create_chat_model()
-            )
-            self._structured_model = model.with_structured_output(
-                CriticEvaluation
-            )
+            model = self._model if self._model is not None else create_chat_model()
+            self._structured_model = model.with_structured_output(CriticEvaluation)
 
         return self._structured_model
 
@@ -39,14 +32,10 @@ class CriticAgent(BaseAgent[CriticRequest, CriticEvaluation]):
         usable_evidence = [
             document
             for document in payload.evidence
-            if document.extraction_status in ("success", "partial")
-            and document.evidence_items
+            if document.extraction_status in ("success", "partial") and document.evidence_items
         ]
 
-        evidence_data = [
-            document.model_dump(mode="json")
-            for document in usable_evidence
-        ]
+        evidence_data = [document.model_dump(mode="json") for document in usable_evidence]
 
         report_json = json.dumps(
             report_data,
@@ -143,15 +132,12 @@ Return a structured CriticEvaluation.
             )
 
         invalid_dimensions = [
-            name
-            for name, score in evaluation.dimension_scores.items()
-            if not 0 <= score <= 10
+            name for name, score in evaluation.dimension_scores.items() if not 0 <= score <= 10
         ]
 
         if invalid_dimensions:
             raise ValueError(
-                "Critic returned dimension scores outside 0-10: "
-                + ", ".join(invalid_dimensions)
+                "Critic returned dimension scores outside 0-10: " + ", ".join(invalid_dimensions)
             )
 
         return evaluation

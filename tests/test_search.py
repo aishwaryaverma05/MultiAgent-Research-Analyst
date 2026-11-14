@@ -55,6 +55,11 @@ def test_normalize_url_rejects_invalid_scheme():
         ExaSearchProvider.normalize_url("ftp://example.com/file")
 
 
+def test_normalize_url_rejects_invalid_port():
+    with pytest.raises(ValueError, match="invalid URL"):
+        ExaSearchProvider.normalize_url("https://example.com:invalid/article")
+
+
 @pytest.mark.asyncio
 async def test_exa_provider_converts_results():
     provider = ExaSearchProvider(client=FakeExaClient())
@@ -65,6 +70,28 @@ async def test_exa_provider_converts_results():
     assert results[0].title == "Result for artificial intelligence"
     assert results[0].metadata["provider"] == "exa"
     assert results[0].relevance_score == 0.95
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("score", [float("nan"), float("inf"), float("-inf")])
+async def test_exa_provider_rejects_non_finite_scores(score):
+    class InvalidScoreClient:
+        async def search(self, query, **kwargs):
+            return SimpleNamespace(
+                results=[
+                    SimpleNamespace(
+                        url="https://example.com/article",
+                        title="Test article",
+                        score=score,
+                    )
+                ]
+            )
+
+    provider = ExaSearchProvider(client=InvalidScoreClient())
+
+    results = await provider.search(make_task("test query"))
+
+    assert results == []
 
 
 class FakeSearchAgent:
@@ -98,9 +125,7 @@ async def test_workers_deduplicate_sources():
 
     workers = SearchWorkers(search_agent=agent)
 
-    results = await workers.run(
-        [make_task("query one"), make_task("query two")]
-    )
+    results = await workers.run([make_task("query one"), make_task("query two")])
 
     assert len(results) == 1
     assert results[0].title == "Shared article"
@@ -122,9 +147,7 @@ async def test_workers_continue_after_partial_failure():
 
     workers = SearchWorkers(search_agent=agent)
 
-    results = await workers.run(
-        [make_task("query one"), make_task("query two")]
-    )
+    results = await workers.run([make_task("query one"), make_task("query two")])
 
     assert len(results) == 1
     assert results[0].title == "Valid result"
@@ -142,6 +165,4 @@ async def test_workers_raise_when_all_tasks_fail():
     workers = SearchWorkers(search_agent=agent)
 
     with pytest.raises(SearchBatchError):
-        await workers.run(
-            [make_task("query one"), make_task("query two")]
-        )
+        await workers.run([make_task("query one"), make_task("query two")])

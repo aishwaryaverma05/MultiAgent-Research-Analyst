@@ -21,9 +21,11 @@ class ResearchQuestion(StrictModel):
     question: str = Field(min_length=5)
     rationale: str = ""
 
+
 class SearchTask(StrictModel):
     question: str = Field(min_length=5)
     query: str = Field(min_length=5)
+
 
 class ResearchPlan(StrictModel):
     objective: str = Field(min_length=10)
@@ -44,8 +46,6 @@ class ResearchPlan(StrictModel):
     search_strategy: list[str] = Field(default_factory=list)
     expected_findings: list[str] = Field(default_factory=list)
     missing_information: list[str] = Field(default_factory=list)
-
-
 
 
 class SourceRecord(StrictModel):
@@ -73,9 +73,9 @@ class SearchBatchResult(StrictModel):
     total_tasks: int = 0
     successful_tasks: int = 0
 
+
 class ReadRequest(StrictModel):
     source: SourceRecord
-
 
 
 class EvidenceItem(StrictModel):
@@ -133,11 +133,21 @@ class SupervisorResult(StrictModel):
     attempted_readers: int = 0
     failed_readers: int = 0
 
+
 class WriteRequest(StrictModel):
     query: str
     evidence: list[EvidenceDocument] = Field(default_factory=list)
     previous_report: str | None = None
     revision_feedback: list[str] = Field(default_factory=list)
+
+
+class Citation(StrictModel):
+    """A citation linked to an original research source."""
+
+    citation_id: str
+    source_id: str
+    title: str
+    url: str
 
 
 class ResearchReport(StrictModel):
@@ -146,6 +156,7 @@ class ResearchReport(StrictModel):
     sections: list[dict[str, str]] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     references: list[str] = Field(default_factory=list)
+    citations: list[Citation] = Field(default_factory=list)
     markdown: str = ""
 
 

@@ -1,4 +1,3 @@
-
 import pytest
 
 from agents.contracts import (
@@ -55,9 +54,7 @@ def make_evidence():
         evidence_items=[
             EvidenceItem(
                 claim="Solar energy capacity increased.",
-                supporting_quote=(
-                    "Solar energy capacity increased significantly."
-                ),
+                supporting_quote=("Solar energy capacity increased significantly."),
             )
         ],
         extraction_status="success",
@@ -77,9 +74,7 @@ def make_evaluation():
         unsupported_claims=[],
         citation_issues=[],
         missing_information=["More recent data is needed."],
-        revision_instructions=[
-            "Include more recent renewable energy statistics."
-        ],
+        revision_instructions=["Include more recent renewable energy statistics."],
     )
 
 
@@ -127,9 +122,7 @@ async def test_critic_handles_missing_evidence():
     result = await critic.run(request)
 
     assert isinstance(result, CriticEvaluation)
-    assert "VERIFIED RESEARCH EVIDENCE" in (
-        model.structured_model.received_prompt
-    )
+    assert "VERIFIED RESEARCH EVIDENCE" in (model.structured_model.received_prompt)
     assert "[]" in model.structured_model.received_prompt
 
 

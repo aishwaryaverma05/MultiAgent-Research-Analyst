@@ -1,4 +1,3 @@
-
 import re
 
 from bs4 import BeautifulSoup
@@ -37,12 +36,7 @@ class ContentExtractor:
             for tag in soup.find_all(tag_name):
                 tag.decompose()
 
-        content = (
-            soup.find("article")
-            or soup.find("main")
-            or soup.body
-            or soup
-        )
+        content = soup.find("article") or soup.find("main") or soup.body or soup
 
         text = content.get_text(separator=" ", strip=True)
         text = re.sub(r"\s+", " ", text).strip()

@@ -1,4 +1,3 @@
-
 import re
 from typing import Any
 
@@ -27,26 +26,16 @@ class ReaderAgent(BaseAgent[ReadRequest, EvidenceDocument]):
     ) -> None:
         self._model = model
         self._structured_model = None
-        self.web_fetcher = (
-            web_fetcher if web_fetcher is not None else WebFetcher()
-        )
+        self.web_fetcher = web_fetcher if web_fetcher is not None else WebFetcher()
         self.content_extractor = (
-            content_extractor
-            if content_extractor is not None
-            else ContentExtractor()
+            content_extractor if content_extractor is not None else ContentExtractor()
         )
 
     def _get_structured_model(self) -> Any:
         """Initialize Gemini's structured-output interface lazily."""
         if self._structured_model is None:
-            model = (
-                self._model
-                if self._model is not None
-                else create_chat_model()
-            )
-            self._structured_model = model.with_structured_output(
-                EvidenceExtraction
-            )
+            model = self._model if self._model is not None else create_chat_model()
+            self._structured_model = model.with_structured_output(EvidenceExtraction)
 
         return self._structured_model
 
@@ -67,9 +56,7 @@ class ReaderAgent(BaseAgent[ReadRequest, EvidenceDocument]):
         rejected_count = 0
 
         for item in extraction.evidence_items:
-            normalized_quote = cls._normalize_quote(
-                item.supporting_quote
-            )
+            normalized_quote = cls._normalize_quote(item.supporting_quote)
 
             if normalized_quote and normalized_quote in normalized_source:
                 verified_items.append(item)
@@ -158,4 +145,3 @@ Return only the required structured output.
             evidence_items=verified_items,
             extraction_status=status,
         )
-

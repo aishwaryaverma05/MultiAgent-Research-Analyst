@@ -1,4 +1,3 @@
-
 import asyncio
 
 import pytest
@@ -21,9 +20,7 @@ def make_plan() -> ResearchPlan:
     return ResearchPlan(
         objective="Research renewable energy development",
         research_questions=[
-            ResearchQuestion(
-                question="What is the current renewable energy capacity?"
-            )
+            ResearchQuestion(question="What is the current renewable energy capacity?")
         ],
         search_tasks=[
             SearchTask(
@@ -56,9 +53,7 @@ def make_evidence(source: SourceRecord) -> EvidenceDocument:
         evidence_items=[
             EvidenceItem(
                 claim="Renewable energy capacity continues to grow.",
-                supporting_quote=(
-                    "Renewable energy capacity continues to grow."
-                ),
+                supporting_quote=("Renewable energy capacity continues to grow."),
             )
         ],
         extraction_status="success",
@@ -118,9 +113,7 @@ class FakeReader:
 
 
 def make_request() -> ResearchRequest:
-    return ResearchRequest(
-        query="Research global renewable energy development"
-    )
+    return ResearchRequest(query="Research global renewable energy development")
 
 
 @pytest.mark.asyncio
@@ -183,8 +176,7 @@ async def test_supervisor_preserves_partial_search_failure():
     assert result.successful_search_tasks == 1
     assert result.failed_search_tasks == 1
     assert len(result.evidence) == 1
-    assert any("Simulated search failure" in error
-               for error in result.errors)
+    assert any("Simulated search failure" in error for error in result.errors)
 
 
 @pytest.mark.asyncio
@@ -197,9 +189,7 @@ async def test_supervisor_handles_reader_failure():
         successful_tasks=2,
     )
 
-    reader = FakeReader(
-        failed_urls={"https://example.com/source-2"}
-    )
+    reader = FakeReader(failed_urls={"https://example.com/source-2"})
 
     supervisor = SupervisorAgent(
         planner=FakePlanner(),
@@ -302,5 +292,4 @@ async def test_supervisor_respects_maximum_source_limit():
     assert result.total_sources == 4
     assert result.attempted_readers == 2
     assert len(result.evidence) == 2
-    assert any("2 sources skipped" in error
-               for error in result.errors)
+    assert any("2 sources skipped" in error for error in result.errors)

@@ -1,4 +1,3 @@
-
 from urllib.parse import urlsplit
 
 import httpx
@@ -75,8 +74,6 @@ class WebFetcher:
                 "application/xhtml+xml",
             )
         ):
-            raise ValueError(
-                f"Expected an HTML webpage, received: {content_type}"
-            )
+            raise ValueError(f"Expected an HTML webpage, received: {content_type}")
 
         return response.text

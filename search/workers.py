@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 from collections.abc import Sequence
@@ -100,8 +99,7 @@ class SearchWorkers:
         )
 
         logger.info(
-            "Search completed: %s tasks, %s successes, "
-            "%s failures, %s unique sources",
+            "Search completed: %s tasks, %s successes, %s failures, %s unique sources",
             batch_result.total_tasks,
             batch_result.successful_tasks,
             len(batch_result.failures),
@@ -119,8 +117,6 @@ class SearchWorkers:
         result = await self.run_detailed(tasks)
 
         if result.successful_tasks == 0:
-            raise SearchBatchError(
-                f"All {result.total_tasks} search tasks failed."
-            )
+            raise SearchBatchError(f"All {result.total_tasks} search tasks failed.")
 
         return result.sources

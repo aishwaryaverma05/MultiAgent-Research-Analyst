@@ -1,4 +1,3 @@
-
 import pytest
 
 from agents.contracts import (
@@ -32,11 +31,7 @@ class FakeChatModel:
 def create_valid_plan():
     return ResearchPlan(
         objective="Understand AI agents in healthcare.",
-        research_questions=[
-            ResearchQuestion(
-                question="How are AI agents used in healthcare?"
-            )
-        ],
+        research_questions=[ResearchQuestion(question="How are AI agents used in healthcare?")],
         search_tasks=[
             SearchTask(
                 question="Investigate clinical applications.",
@@ -55,11 +50,7 @@ async def test_planner_returns_research_plan():
     fake_model = FakeChatModel(create_valid_plan())
     planner = PlannerAgent(model=fake_model)
 
-    result = await planner.run(
-        ResearchRequest(
-            query="How are AI agents transforming healthcare?"
-        )
-    )
+    result = await planner.run(ResearchRequest(query="How are AI agents transforming healthcare?"))
 
     assert isinstance(result, ResearchPlan)
     assert len(result.search_tasks) == 2
@@ -71,11 +62,7 @@ async def test_planner_accepts_dictionary_output():
     fake_model = FakeChatModel(create_valid_plan().model_dump())
     planner = PlannerAgent(model=fake_model)
 
-    result = await planner.run(
-        ResearchRequest(
-            query="How are AI agents transforming healthcare?"
-        )
-    )
+    result = await planner.run(ResearchRequest(query="How are AI agents transforming healthcare?"))
 
     assert isinstance(result, ResearchPlan)
     assert len(result.search_tasks) == 2
@@ -83,16 +70,10 @@ async def test_planner_accepts_dictionary_output():
 
 @pytest.mark.asyncio
 async def test_planner_rejects_empty_search_tasks():
-    invalid_plan = create_valid_plan().model_copy(
-        update={"search_tasks": []}
-    )
+    invalid_plan = create_valid_plan().model_copy(update={"search_tasks": []})
 
     fake_model = FakeChatModel(invalid_plan)
     planner = PlannerAgent(model=fake_model)
 
     with pytest.raises(ValueError, match="no executable search tasks"):
-        await planner.run(
-            ResearchRequest(
-                query="How are AI agents transforming healthcare?"
-            )
-        )
+        await planner.run(ResearchRequest(query="How are AI agents transforming healthcare?"))

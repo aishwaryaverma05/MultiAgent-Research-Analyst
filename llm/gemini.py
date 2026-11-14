@@ -1,4 +1,3 @@
-
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from config import get_settings
@@ -11,7 +10,7 @@ def create_chat_model() -> ChatGoogleGenerativeAI:
     Credentials are validated only when a live model is requested.
     """
 
-    settings = get_settings()  #config.py  se data fetch
+    settings = get_settings()  # config.py  se data fetch
 
     api_key = settings.require_gemini_credentials()
 

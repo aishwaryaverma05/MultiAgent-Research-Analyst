@@ -1,4 +1,3 @@
-
 from agents.base import BaseAgent
 from agents.contracts import SearchTask, SourceRecord
 from search.exa_provider import ExaSearchProvider

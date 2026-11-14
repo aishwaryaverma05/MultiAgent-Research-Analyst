@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 
@@ -18,9 +17,7 @@ from search.workers import SearchWorkers
 logger = logging.getLogger(__name__)
 
 
-class SupervisorAgent(
-    BaseAgent[ResearchRequest, SupervisorResult]
-):
+class SupervisorAgent(BaseAgent[ResearchRequest, SupervisorResult]):
     """Coordinate planning, parallel search and evidence extraction."""
 
     name = "supervisor"
@@ -34,14 +31,10 @@ class SupervisorAgent(
         max_sources_to_read: int = 10,
     ) -> None:
         if max_reader_concurrency < 1:
-            raise ValueError(
-                "max_reader_concurrency must be at least 1."
-            )
+            raise ValueError("max_reader_concurrency must be at least 1.")
 
         if max_sources_to_read < 1:
-            raise ValueError(
-                "max_sources_to_read must be at least 1."
-            )
+            raise ValueError("max_sources_to_read must be at least 1.")
 
         self.planner = planner or PlannerAgent()
         self.search_workers = search_workers or SearchWorkers()
@@ -58,9 +51,7 @@ class SupervisorAgent(
         """Read one source while respecting the concurrency limit."""
 
         async with semaphore:
-            return await self.reader.run(
-                ReadRequest(source=source)
-            )
+            return await self.reader.run(ReadRequest(source=source))
 
     async def _read_sources(
         self,
@@ -68,15 +59,10 @@ class SupervisorAgent(
     ) -> tuple[list[EvidenceDocument], int, list[str]]:
         """Read sources concurrently and preserve partial results."""
 
-        semaphore = asyncio.Semaphore(
-            self.max_reader_concurrency
-        )
+        semaphore = asyncio.Semaphore(self.max_reader_concurrency)
 
         results = await asyncio.gather(
-            *(
-                self._read_source(source, semaphore)
-                for source in sources
-            ),
+            *(self._read_source(source, semaphore) for source in sources),
             return_exceptions=True,
         )
 
@@ -93,9 +79,7 @@ class SupervisorAgent(
                     raise result
 
                 failed_readers += 1
-                error = (
-                    f"Reader failed for {source.url}: {result}"
-                )
+                error = f"Reader failed for {source.url}: {result}"
                 errors.append(error)
 
                 logger.error(error)
@@ -105,14 +89,10 @@ class SupervisorAgent(
 
             if result.extraction_status == "failed":
                 failed_readers += 1
-                errors.append(
-                    f"Evidence extraction failed for {source.url}"
-                )
+                errors.append(f"Evidence extraction failed for {source.url}")
 
             elif result.extraction_status == "partial":
-                errors.append(
-                    f"Evidence extraction was partial for {source.url}"
-                )
+                errors.append(f"Evidence extraction was partial for {source.url}")
 
         return evidence, failed_readers, errors
 
@@ -126,14 +106,10 @@ class SupervisorAgent(
         plan: ResearchPlan = await self.planner.run(payload)
 
         if not plan.search_tasks:
-            raise ValueError(
-                "Research plan contains no executable search tasks."
-            )
+            raise ValueError("Research plan contains no executable search tasks.")
 
         # Step 2: Execute search tasks concurrently.
-        search_result = await self.search_workers.run_detailed(
-            plan.search_tasks
-        )
+        search_result = await self.search_workers.run_detailed(plan.search_tasks)
 
         errors = [
             (
@@ -146,7 +122,7 @@ class SupervisorAgent(
         sources = search_result.sources
 
         # Step 3: Select a bounded number of sources for reading.
-        selected_sources = sources[:self.max_sources_to_read]
+        selected_sources = sources[: self.max_sources_to_read]
 
         skipped_sources = len(sources) - len(selected_sources)
 
@@ -157,24 +133,17 @@ class SupervisorAgent(
             )
 
         # Step 4: Extract evidence from selected sources.
-        evidence, failed_readers, reader_errors = (
-            await self._read_sources(selected_sources)
-        )
+        evidence, failed_readers, reader_errors = await self._read_sources(selected_sources)
 
         errors.extend(reader_errors)
 
         # Step 5: Determine the overall execution status.
-        successful_readers = (
-            len(selected_sources) - failed_readers
-        )
+        successful_readers = len(selected_sources) - failed_readers
 
         if (
             search_result.successful_tasks == 0
             or not sources
-            or (
-                selected_sources
-                and successful_readers == 0
-            )
+            or (selected_sources and successful_readers == 0)
         ):
             status = "failed"
 
@@ -185,9 +154,7 @@ class SupervisorAgent(
             status = "success"
 
         logger.info(
-            "Supervisor completed: status=%s, "
-            "searches=%s/%s, sources=%s, "
-            "readers=%s/%s",
+            "Supervisor completed: status=%s, searches=%s/%s, sources=%s, readers=%s/%s",
             status,
             search_result.successful_tasks,
             search_result.total_tasks,

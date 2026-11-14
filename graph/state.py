@@ -1,4 +1,3 @@
-
 from typing import Literal, TypedDict
 
 
@@ -18,6 +17,7 @@ class ResearchState(TypedDict, total=False):
         "completed",
         "failed",
         "partial",
+        "rejected",
     ]
     current_stage: str
 
@@ -34,6 +34,10 @@ class ResearchState(TypedDict, total=False):
     critic_evaluation: dict
     critic_score: float
     critic_feedback: list[str]
+
+    # Human approval
+    human_approval: dict
+    human_feedback: str
 
     # Fact checker output
     fact_check: dict
