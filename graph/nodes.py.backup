@@ -1,0 +1,41 @@
+
+
+from datetime import UTC, datetime
+
+from graph.state import ResearchState
+
+
+def initialize_research(state: ResearchState) -> dict:
+    """
+    Validate the incoming research request and initialize workflow metadata.
+    """
+
+    query = state.get("query", "").strip()
+
+    if len(query) < 8:
+        raise ValueError(
+            "Research query must contain at least 8 characters."
+        )
+
+    return {
+        "status": "running",
+        "current_stage": "foundation_initialized",
+        "created_at": (
+            state.get("created_at")
+            or datetime.now(UTC).isoformat()
+        ),
+        "revision_count": state.get("revision_count", 0),
+    }
+
+
+def mark_foundation_ready(state: ResearchState) -> dict:
+    """
+    Mark the initial graph lifecycle as completed.
+
+    This is a foundation smoke-test node, not a research completion node.
+    """
+
+    return {
+        "status": "completed",
+        "current_stage": "foundation_ready",
+    }

@@ -1,0 +1,21 @@
+# Core agent framework
+langchain
+langgraph
+langchain-google-genai
+
+# Data validation and configuration
+pydantic
+pydantic-settings
+python-dotenv
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+
+# Code quality
+ruff
+
+# Web search
+exa-py
+beautifulsoup4
