@@ -1,14 +1,21 @@
+
 """Database connection and session management."""
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from config import get_settings
 
 settings = get_settings()
 
+database_url = make_url(settings.database_url)
+
+if database_url.drivername == "postgresql":
+    database_url = database_url.set(drivername="postgresql+psycopg")
+
 engine = create_engine(
-    settings.database_url,
+    database_url,
     pool_pre_ping=True,
 )
 
