@@ -1,22 +1,35 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+
+"""Factory for configured Groq chat models."""
+
+from typing import Literal
+
+from langchain_groq import ChatGroq
 
 from config import get_settings
 
 
-def create_chat_model() -> ChatGoogleGenerativeAI:
+def create_chat_model(
+    tier: Literal["primary", "fast"] = "primary",
+) -> ChatGroq:
     """
-    Initialize the configured Gemini chat model.
+    Initialize the configured Groq chat model.
 
-    Credentials are validated only when a live model is requested.
+    Primary: Higher-reasoning model.
+    Fast: Lower-cost, faster model.
     """
 
-    settings = get_settings()  # config.py  se data fetch
+    settings = get_settings()
+    api_key = settings.require_groq_credentials()
 
-    api_key = settings.require_gemini_credentials()
+    model_name = (
+        settings.llm_fast_model
+        if tier == "fast"
+        else settings.llm_model
+    )
 
-    return ChatGoogleGenerativeAI(
-        model=settings.llm_model,
-        google_api_key=api_key,
+    return ChatGroq(
+        model=model_name,
+        api_key=api_key,
         temperature=settings.llm_temperature,
         timeout=settings.request_timeout_seconds,
         max_retries=2,

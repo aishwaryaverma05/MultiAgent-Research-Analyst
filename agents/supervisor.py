@@ -1,3 +1,4 @@
+
 import asyncio
 import logging
 
@@ -47,22 +48,29 @@ class SupervisorAgent(BaseAgent[ResearchRequest, SupervisorResult]):
         self,
         source: SourceRecord,
         semaphore: asyncio.Semaphore,
+        query: str,
     ) -> EvidenceDocument:
         """Read one source while respecting the concurrency limit."""
 
         async with semaphore:
-            return await self.reader.run(ReadRequest(source=source))
+            return await self.reader.run(
+                ReadRequest(source=source, query=query)
+            )
 
     async def _read_sources(
         self,
         sources: list[SourceRecord],
+        query: str,
     ) -> tuple[list[EvidenceDocument], int, list[str]]:
         """Read sources concurrently and preserve partial results."""
 
         semaphore = asyncio.Semaphore(self.max_reader_concurrency)
 
         results = await asyncio.gather(
-            *(self._read_source(source, semaphore) for source in sources),
+            *(
+                self._read_source(source, semaphore, query)
+                for source in sources
+            ),
             return_exceptions=True,
         )
 
@@ -89,10 +97,14 @@ class SupervisorAgent(BaseAgent[ResearchRequest, SupervisorResult]):
 
             if result.extraction_status == "failed":
                 failed_readers += 1
-                errors.append(f"Evidence extraction failed for {source.url}")
+                errors.append(
+                    f"Evidence extraction failed for {source.url}"
+                )
 
             elif result.extraction_status == "partial":
-                errors.append(f"Evidence extraction was partial for {source.url}")
+                errors.append(
+                    f"Evidence extraction was partial for {source.url}"
+                )
 
         return evidence, failed_readers, errors
 
@@ -106,10 +118,14 @@ class SupervisorAgent(BaseAgent[ResearchRequest, SupervisorResult]):
         plan: ResearchPlan = await self.planner.run(payload)
 
         if not plan.search_tasks:
-            raise ValueError("Research plan contains no executable search tasks.")
+            raise ValueError(
+                "Research plan contains no executable search tasks."
+            )
 
         # Step 2: Execute search tasks concurrently.
-        search_result = await self.search_workers.run_detailed(plan.search_tasks)
+        search_result = await self.search_workers.run_detailed(
+            plan.search_tasks
+        )
 
         errors = [
             (
@@ -132,8 +148,11 @@ class SupervisorAgent(BaseAgent[ResearchRequest, SupervisorResult]):
                 f"the reader limit is {self.max_sources_to_read}."
             )
 
-        # Step 4: Extract evidence from selected sources.
-        evidence, failed_readers, reader_errors = await self._read_sources(selected_sources)
+        # Step 4: Extract evidence using the original research query.
+        evidence, failed_readers, reader_errors = await self._read_sources(
+            selected_sources,
+            payload.query,
+        )
 
         errors.extend(reader_errors)
 
@@ -154,7 +173,8 @@ class SupervisorAgent(BaseAgent[ResearchRequest, SupervisorResult]):
             status = "success"
 
         logger.info(
-            "Supervisor completed: status=%s, searches=%s/%s, sources=%s, readers=%s/%s",
+            "Supervisor completed: status=%s, searches=%s/%s, "
+            "sources=%s, readers=%s/%s",
             status,
             search_result.successful_tasks,
             search_result.total_tasks,

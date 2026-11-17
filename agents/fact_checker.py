@@ -26,8 +26,14 @@ class FactCheckerAgent(BaseAgent[FactCheckRequest, FactCheckResult]):
         """Initialize the structured LLM lazily."""
 
         if self._structured_model is None:
-            model = self._model if self._model is not None else create_chat_model()
-            self._structured_model = model.with_structured_output(FactCheckResult)
+            model = (self._model
+            if self._model is not None
+            else create_chat_model(tier="fast"))
+            self._structured_model = model.with_structured_output(
+            FactCheckResult,
+            method="json_schema",
+            strict=True,
+        )
 
         return self._structured_model
 

@@ -24,7 +24,7 @@ class FakeChatModel:
     def __init__(self, response):
         self.structured_model = FakeStructuredModel(response)
 
-    def with_structured_output(self, schema):
+    def with_structured_output(self, schema, **kwargs):
         assert schema is ResearchReport
         return self.structured_model
 

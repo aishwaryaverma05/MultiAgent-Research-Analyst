@@ -1,10 +1,12 @@
+
 import re
 
+import trafilatura
 from bs4 import BeautifulSoup
 
 
 class ContentExtractor:
-    """Extract readable text from webpage HTML."""
+    """Extract readable article text from webpage HTML."""
 
     REMOVED_TAGS = [
         "script",
@@ -25,7 +27,7 @@ class ContentExtractor:
         self.max_characters = max_characters
 
     def extract(self, html: str) -> str:
-        """Convert HTML into clean, readable text."""
+        """Clean HTML and extract article text."""
 
         if not html.strip():
             raise ValueError("Cannot extract content from empty HTML.")
@@ -36,9 +38,24 @@ class ContentExtractor:
             for tag in soup.find_all(tag_name):
                 tag.decompose()
 
-        content = soup.find("article") or soup.find("main") or soup.body or soup
+        cleaned_html = str(soup)
 
-        text = content.get_text(separator=" ", strip=True)
+        text = trafilatura.extract(
+            cleaned_html,
+            include_comments=False,
+            include_tables=True,
+            favor_recall=True,
+        )
+
+        if not text or not text.strip():
+            content = (
+                soup.find("article")
+                or soup.find("main")
+                or soup.body
+                or soup
+            )
+            text = content.get_text(separator=" ", strip=True)
+
         text = re.sub(r"\s+", " ", text).strip()
 
         if not text:

@@ -293,3 +293,45 @@ async def test_supervisor_respects_maximum_source_limit():
     assert result.attempted_readers == 2
     assert len(result.evidence) == 2
     assert any("2 sources skipped" in error for error in result.errors)
+
+
+
+@pytest.mark.asyncio
+async def test_supervisor_preserves_exa_snippet_for_reader():
+    expected_snippet = "Exa highlights about renewable energy capacity."
+
+    source = SourceRecord(
+        source_id="exa-source-1",
+        title="Renewable Energy Report",
+        url="https://example.com/report",
+        snippet=expected_snippet,
+        metadata={"provider": "exa"},
+    )
+
+    class SnippetCheckingReader:
+        def __init__(self):
+            self.received_snippets = []
+
+        async def run(self, payload):
+            self.received_snippets.append(payload.source.snippet)
+            return make_evidence(payload.source)
+
+    reader = SnippetCheckingReader()
+
+    search_result = SearchBatchResult(
+        sources=[source],
+        total_tasks=2,
+        successful_tasks=2,
+    )
+
+    supervisor = SupervisorAgent(
+        planner=FakePlanner(),
+        search_workers=FakeSearchWorkers(search_result),
+        reader=reader,
+    )
+
+    result = await supervisor.run(make_request())
+
+    assert result.status == "success"
+    assert reader.received_snippets == [expected_snippet]
+    assert result.evidence[0].source_id == "exa-source-1"

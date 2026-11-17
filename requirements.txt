@@ -2,6 +2,7 @@
 langchain
 langgraph
 langchain-google-genai
+langchain-groq
 
 # Data validation and configuration
 pydantic
@@ -20,7 +21,25 @@ ruff
 exa-py
 beautifulsoup4
 
-# Vector database
+# Vector database and retrieval
 qdrant-client
-rank-bm25  #keyword base retrieval hota hai
-flashrank  #use to re rank search results
+rank-bm25
+flashrank
+
+# PDF extraction
+pypdf
+pymupdf
+
+# RAG evaluation
+ragas
+
+# Application layer
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg[binary]
+redis
+celery
+streamlit
+requests
+langgraph-checkpoint-postgres

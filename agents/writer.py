@@ -27,7 +27,11 @@ class WriterAgent(BaseAgent[WriteRequest, ResearchReport]):
 
         if self._structured_model is None:
             model = self._model if self._model is not None else create_chat_model()
-            self._structured_model = model.with_structured_output(ResearchReport)
+            self._structured_model = model.with_structured_output(
+            ResearchReport,
+            method="json_schema",
+            strict=True,
+        )
 
         return self._structured_model
 
@@ -121,7 +125,19 @@ class WriterAgent(BaseAgent[WriteRequest, ResearchReport]):
 
         citation_catalog = self._build_citation_catalog(usable_evidence)
 
-        evidence_data = [document.model_dump(mode="json") for document in usable_evidence]
+        evidence_data = [
+            {
+                "source_id": document.source_id,
+                "url": document.url,
+                "title": document.title,
+                "evidence_items": [
+                    item.model_dump(mode="json")
+                    for item in document.evidence_items
+                ],
+                "extraction_status": document.extraction_status,
+            }
+            for document in usable_evidence
+        ]
 
         evidence_json = json.dumps(
             evidence_data,

@@ -9,6 +9,9 @@ requires-python = ">=3.11"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-q"
+markers = [
+    "integration: tests that require external services, APIs, or network access",
+]
 
 [tool.ruff]
 line-length = 100

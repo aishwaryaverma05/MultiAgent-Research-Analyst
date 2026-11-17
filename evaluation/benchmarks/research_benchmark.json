@@ -1,0 +1,40 @@
+
+{
+  "name": "research-benchmark",
+  "description": "Benchmark dataset for evaluating research and RAG performance.",
+  "samples": [
+    {
+      "question": "What is retrieval-augmented generation (RAG)?",
+      "reference_answer": "Retrieval-augmented generation combines information retrieval with language generation. It retrieves relevant external information and uses that information to generate a grounded response.",
+      "reference_contexts": [
+        "Retrieval-augmented generation retrieves relevant information from an external knowledge source before generating a response.",
+        "RAG combines a retrieval component with a generative language model to improve factual grounding."
+      ],
+      "relevant_source_ids": [
+        "rag-intro-001"
+      ]
+    },
+    {
+      "question": "What is hybrid search in information retrieval?",
+      "reference_answer": "Hybrid search combines semantic search and keyword-based search to retrieve relevant documents using both meaning and exact term matching.",
+      "reference_contexts": [
+        "Semantic search retrieves documents based on contextual meaning using vector embeddings.",
+        "Keyword search retrieves documents based on matching terms, while hybrid search combines both approaches."
+      ],
+      "relevant_source_ids": [
+        "hybrid-search-001"
+      ]
+    },
+    {
+      "question": "Why is reranking used in a RAG pipeline?",
+      "reference_answer": "Reranking reorders retrieved documents according to their relevance to the query, helping the RAG system select the most useful context for answer generation.",
+      "reference_contexts": [
+        "A reranker scores candidate documents against a query and sorts them by relevance.",
+        "Reranking improves the quality of retrieved context before it is passed to the language model."
+      ],
+      "relevant_source_ids": [
+        "reranking-001"
+      ]
+    }
+  ]
+}

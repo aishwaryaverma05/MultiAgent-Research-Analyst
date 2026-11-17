@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from agents.contracts import SearchTask, SourceRecord
+from agents.search_agent import SearchAgent
 from search.exa_provider import ExaSearchProvider
 from search.workers import SearchBatchError, SearchWorkers
 
@@ -60,16 +61,43 @@ def test_normalize_url_rejects_invalid_port():
         ExaSearchProvider.normalize_url("https://example.com:invalid/article")
 
 
+
 @pytest.mark.asyncio
 async def test_exa_provider_converts_results():
     provider = ExaSearchProvider(client=FakeExaClient())
 
-    results = await provider.search(make_task("artificial intelligence"))
+    results = await provider.search(make_task("artificialintelligence"))
 
     assert len(results) == 1
-    assert results[0].title == "Result for artificial intelligence"
+    assert results[0].title == "Result for artificialintelligence"
     assert results[0].metadata["provider"] == "exa"
     assert results[0].relevance_score == 0.95
+    assert results[0].snippet == "Important research evidence"
+
+
+
+@pytest.mark.asyncio
+async def test_exa_provider_uses_text_when_highlights_are_empty():
+    class TextFallbackClient:
+        async def search(self, query, **kwargs):
+            return SimpleNamespace(
+                results=[
+                    SimpleNamespace(
+                        url="https://example.com/article",
+                        title="Fallback article",
+                        highlights=[],
+                        text="Fallback research evidence from Exa.",
+                        score=0.90,
+                    )
+                ]
+            )
+
+    provider = ExaSearchProvider(client=TextFallbackClient())
+
+    results = await provider.search(make_task("test query"))
+
+    assert len(results) == 1
+    assert results[0].snippet == "Fallback research evidence from Exa."
 
 
 @pytest.mark.asyncio
@@ -166,3 +194,27 @@ async def test_workers_raise_when_all_tasks_fail():
 
     with pytest.raises(SearchBatchError):
         await workers.run([make_task("query one"), make_task("query two")])
+
+
+
+@pytest.mark.asyncio
+async def test_search_agent_preserves_source_snippet():
+    expected_source = SourceRecord(
+        source_id="test-source",
+        title="Research article",
+        url="https://example.com/article",
+        snippet="Important Exa research highlights.",
+        metadata={"provider": "exa"},
+    )
+
+    class FakeProvider:
+        async def search(self, payload):
+            return [expected_source]
+
+    agent = SearchAgent(provider=FakeProvider())
+
+    results = await agent.run(make_task("test query"))
+
+    assert len(results) == 1
+    assert results[0].snippet == "Important Exa research highlights."
+    assert results[0].source_id == "test-source"

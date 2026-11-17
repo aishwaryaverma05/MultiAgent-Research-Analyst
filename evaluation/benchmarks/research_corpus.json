@@ -1,0 +1,25 @@
+
+{
+  "documents": [
+    {
+      "source_id": "rag-intro-001",
+      "text": "Retrieval-augmented generation (RAG) combines information retrieval with text generation. It retrieves relevant external documents from a knowledge source and provides their content to a language model so that the model can generate more accurate, context-grounded responses."
+    },
+    {
+      "source_id": "hybrid-search-001",
+      "text": "Hybrid search combines semantic search and keyword-based search. Semantic search uses vector embeddings to find documents based on contextual meaning, while keyword search uses term matching such as BM25. Combining both approaches can improve information retrieval."
+    },
+    {
+      "source_id": "reranking-001",
+      "text": "Reranking improves retrieval quality by scoring candidate documents against a search query and sorting them by relevance. In a RAG pipeline, a reranker selects the most useful retrieved context before it is passed to the language model."
+    },
+    {
+      "source_id": "distractor-001",
+      "text": "Database indexing improves database query performance by organizing records for faster lookup. Common index structures include B-trees and hash indexes."
+    },
+    {
+      "source_id": "distractor-002",
+      "text": "Software testing helps identify defects in applications. Unit tests verify individual components, while integration tests verify interactions between multiple components."
+    }
+  ]
+}

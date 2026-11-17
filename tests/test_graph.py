@@ -2,6 +2,7 @@ import pytest
 from langgraph.types import Command
 
 from agents.contracts import (
+    CriticDimensionScores,
     CriticEvaluation,
     EvidenceDocument,
     EvidenceItem,
@@ -77,13 +78,13 @@ def make_supervisor_result():
 def make_critic_evaluation(score):
     return CriticEvaluation(
         overall_score=score,
-        dimension_scores={
-            "factual_accuracy": score,
-            "evidence_quality": score,
-            "citation_quality": score,
-            "completeness": score,
-            "clarity": score,
-        },
+        dimension_scores=CriticDimensionScores(
+            factual_accuracy=score,
+            evidence_quality=score,
+            citation_quality=score,
+            completeness=score,
+            clarity=score,
+        ),
         unsupported_claims=[],
         citation_issues=[],
         missing_information=[],

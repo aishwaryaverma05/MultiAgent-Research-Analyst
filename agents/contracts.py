@@ -76,6 +76,7 @@ class SearchBatchResult(StrictModel):
 
 class ReadRequest(StrictModel):
     source: SourceRecord
+    query: str = ""
 
 
 class EvidenceItem(StrictModel):
@@ -165,9 +166,16 @@ class CriticRequest(StrictModel):
     evidence: list[EvidenceDocument] = Field(default_factory=list)
 
 
+class CriticDimensionScores(StrictModel):
+    factual_accuracy: float = Field(ge=0, le=10)
+    evidence_quality: float = Field(ge=0, le=10)
+    citation_quality: float = Field(ge=0, le=10)
+    completeness: float = Field(ge=0, le=10)
+    clarity: float = Field(ge=0, le=10)
+
 class CriticEvaluation(StrictModel):
     overall_score: float = Field(ge=0, le=10)
-    dimension_scores: dict[str, float]
+    dimension_scores: CriticDimensionScores
 
     unsupported_claims: list[str] = Field(default_factory=list)
     citation_issues: list[str] = Field(default_factory=list)

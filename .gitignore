@@ -14,3 +14,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 .ipynb_checkpoints/
+
+# Python virtual environments
+.venv*/

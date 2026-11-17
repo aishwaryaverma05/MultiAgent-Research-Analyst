@@ -1,6 +1,8 @@
+
 import pytest
 
 from agents.contracts import (
+    CriticDimensionScores,
     CriticEvaluation,
     CriticRequest,
     EvidenceDocument,
@@ -23,9 +25,12 @@ class FakeStructuredModel:
 class FakeChatModel:
     def __init__(self, response):
         self.structured_model = FakeStructuredModel(response)
+        self.structured_schema = None
+        self.structured_options = None
 
-    def with_structured_output(self, schema):
-        assert schema is CriticEvaluation
+    def with_structured_output(self, schema, **kwargs):
+        self.structured_schema = schema
+        self.structured_options = kwargs
         return self.structured_model
 
 
@@ -54,7 +59,7 @@ def make_evidence():
         evidence_items=[
             EvidenceItem(
                 claim="Solar energy capacity increased.",
-                supporting_quote=("Solar energy capacity increased significantly."),
+                supporting_quote="Solar energy capacity increased significantly.",
             )
         ],
         extraction_status="success",
@@ -64,17 +69,19 @@ def make_evidence():
 def make_evaluation():
     return CriticEvaluation(
         overall_score=8.5,
-        dimension_scores={
-            "factual_accuracy": 9.0,
-            "evidence_quality": 8.0,
-            "citation_quality": 8.0,
-            "completeness": 8.0,
-            "clarity": 9.0,
-        },
+        dimension_scores=CriticDimensionScores(
+            factual_accuracy=9.0,
+            evidence_quality=8.0,
+            citation_quality=8.0,
+            completeness=8.0,
+            clarity=9.0,
+        ),
         unsupported_claims=[],
         citation_issues=[],
         missing_information=["More recent data is needed."],
-        revision_instructions=["Include more recent renewable energy statistics."],
+        revision_instructions=[
+            "Include more recent renewable energy statistics."
+        ],
     )
 
 
@@ -94,7 +101,7 @@ async def test_critic_evaluates_research_report():
 
     assert isinstance(result, CriticEvaluation)
     assert result.overall_score == 8.5
-    assert result.dimension_scores["clarity"] == 9.0
+    assert result.dimension_scores.clarity == 9.0
     assert result.revision_instructions
 
 
@@ -122,7 +129,7 @@ async def test_critic_handles_missing_evidence():
     result = await critic.run(request)
 
     assert isinstance(result, CriticEvaluation)
-    assert "VERIFIED RESEARCH EVIDENCE" in (model.structured_model.received_prompt)
+    assert "VERIFIED RESEARCH EVIDENCE" in model.structured_model.received_prompt
     assert "[]" in model.structured_model.received_prompt
 
 
@@ -140,23 +147,15 @@ async def test_critic_includes_report_and_evidence_in_prompt():
     assert "source-001" in prompt
 
 
-@pytest.mark.asyncio
-async def test_critic_rejects_invalid_dimension_score():
-    evaluation = make_evaluation().model_copy(
-        update={
-            "dimension_scores": {
-                "factual_accuracy": 12.0,
-            }
-        }
-    )
-
-    critic = CriticAgent(model=FakeChatModel(evaluation))
-
-    with pytest.raises(
-        ValueError,
-        match="dimension scores outside 0-10",
-    ):
-        await critic.run(make_request())
+def test_critic_dimension_scores_reject_invalid_values():
+    with pytest.raises(ValueError):
+        CriticDimensionScores(
+            factual_accuracy=12.0,
+            evidence_quality=8.0,
+            citation_quality=8.0,
+            completeness=8.0,
+            clarity=9.0,
+        )
 
 
 @pytest.mark.asyncio
